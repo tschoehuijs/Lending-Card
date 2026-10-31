@@ -1,7 +1,7 @@
-/* Lending Card v1.1.0 — MIT License. No build step or external dependencies. */
+/* Lending Card v1.1.1 — MIT License. No build step or external dependencies. */
 (() => {
   "use strict";
-  const VERSION = "1.1.0";
+  const VERSION = "1.1.1";
   const DEFAULTS = { title: "Lending", hide_completed: true, columns: 2, sort: "due" };
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -79,7 +79,10 @@
       this._request++;
       this._loading = false;
     }
-    getCardSize() { return 2 + Math.ceil(this._visibleItems().length / (this._config?.columns || 2)) * 3; }
+    getCardSize() {
+      const rows = Math.ceil(this._visibleItems().length / (this._config?.columns || 2));
+      return 2 + Math.ceil(rows * 1.8);
+    }
     getGridOptions() { return { columns: 12, rows: "auto", min_columns: 3 }; }
     async _refresh() {
       if (!this.isConnected || !this._hass || !this._config || this._loading) return;
@@ -265,14 +268,15 @@
               const returned = item.status === "completed";
               const overdue = this._overdue(item);
               return `<article class="tile ${returned ? "returned" : ""} ${overdue ? "overdue" : ""}">
-                <div class="tile-top"><span class="item-icon">${icon(returned ? "package-variant-closed-check" : "package-variant")}</span>
-                  <button class="icon-button edit" data-index="${index}" title="Edit loan" aria-label="Edit ${e(item.summary)}" ${disabled}>${icon("pencil-outline")}</button></div>
-                <h3>${e(item.summary)}</h3>
-                <div class="borrower">${icon("account-outline")}<span>${e(item.description || "No borrower specified")}</span></div>
-                <div class="due ${overdue ? "late" : ""}">${icon(overdue ? "calendar-alert" : "calendar-outline")}<span>${overdue ? "Overdue · " : item.due ? "Due · " : ""}${e(this._formatDue(item.due))}</span></div>
-                <button class="status toggle" data-index="${index}" ${disabled} ${!item.uid ? "disabled" : ""}>
-                  ${icon(returned ? "undo-variant" : "check")}${returned ? "Returned · Undo" : "Mark returned"}
-                </button>
+                <div class="loan-details">
+                  <h3>${e(item.summary)}</h3>
+                  <div class="borrower">${e(item.description || "No borrower specified")}</div>
+                  ${item.due ? `<div class="due ${overdue ? "late" : ""}">${overdue ? "Overdue &middot; " : "Due &middot; "}${e(this._formatDue(item.due))}</div>` : ""}
+                </div>
+                <div class="loan-actions">
+                  <button class="icon-button edit" data-index="${index}" title="Edit loan" aria-label="Edit ${e(item.summary)}" ${disabled}>${icon("pencil-outline")}</button>
+                  <button class="icon-button toggle" data-index="${index}" title="${returned ? "Undo return" : "Mark returned"}" aria-label="${returned ? "Undo return of" : "Mark returned:"} ${e(item.summary)}" ${disabled} ${!item.uid ? "disabled" : ""}>${icon(returned ? "undo-variant" : "check")}</button>
+                </div>
               </article>`;
             }).join("")}
           </div>
@@ -335,6 +339,18 @@
       form{margin:0 16px 16px;padding:16px;border:1px solid var(--divider-color);border-radius:12px}form h3{margin-top:0}label{display:block;font-size:13px;margin-bottom:14px}
       input{display:block;width:100%;margin-top:6px;min-height:44px;padding:10px 12px;font:inherit;color:var(--primary-text-color);background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;color-scheme:light dark}
       .form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.primary{background:var(--primary-color);color:var(--text-primary-color,#fff)}form .error{margin:12px 0 0}
+      .tiles{gap:8px}
+      .tile{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;min-width:0}
+      .loan-details{flex:1;min-width:0}
+      .tile h3{margin:0;font-size:14px;font-weight:500;line-height:1.35;overflow-wrap:anywhere}
+      .tile .borrower{display:block;margin-top:3px;font-size:12px;line-height:1.3;color:var(--secondary-text-color);overflow-wrap:anywhere}
+      .tile .due{display:block;margin:4px 0 0;font-size:11px;line-height:1.3}
+      .tile .due.late{color:var(--error-color)}
+      .loan-actions{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
+      .loan-actions .icon-button{width:32px;height:32px;min-height:32px;padding:6px}
+      .loan-actions ha-icon{--mdc-icon-size:18px}
+      .loan-actions .edit{color:var(--secondary-text-color)}
+      .returned .loan-actions button{color:var(--secondary-text-color)}
       @container(max-width:450px){header{flex-wrap:wrap}.tiles{grid-template-columns:repeat(min(var(--columns),2),minmax(0,1fr))}.add span{display:none}.toolbar{margin-left:auto}}
       @container(max-width:330px){.tiles{grid-template-columns:1fr}}
     `; }
