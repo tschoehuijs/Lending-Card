@@ -11,7 +11,7 @@ A custom dashboard card for Home Assistant that shows **what you lent out, who b
 
 ## Features
 
-- **Individual tiles** with item name, borrower and optional due date.
+- **Compact individual tiles** with item name, borrower and optional due date. No date row is shown when no due date is set.
 - **Add and edit loans** directly in the card.
 - **Mark returned** and undo a return without deleting the item.
 - **Hide returned items**, or display them in gray.
@@ -62,7 +62,7 @@ sort: due
 
 ## Usage and refresh behavior
 
-Use **Add loan** or the pencil button to enter an item, borrower and optional due date. **Mark returned** completes the underlying item. Disable **Hide returned items** to access **Returned · Undo**.
+Use **Add loan** or the pencil button to enter an item, borrower and optional due date. **Mark returned** completes the underlying item. Disable **Hide returned items** to access the **Undo return** button.
 
 Updates use the item's UID, so duplicate item names can be edited independently.
 
@@ -70,55 +70,9 @@ The card refreshes after its own writes, on selected entity state changes, every
 
 Existing datetime deadlines retain their time when only the borrower or item name changes. Explicitly changing the date converts the deadline to date-only. Clearing a deadline sends `due_date: null`; if your HA version rejects it, the error is displayed and the edit form remains open. The card never deletes and recreates a loan to work around this.
 
-## Repository setup — browser only
+## Development
 
-Create a public repository named **lending-card**, with a description and topics such as `home-assistant`, `hacs`, `lovelace` and `custom-card`.
-
-Upload the original card package, then apply the files from the release update package, preserving their paths:
-
-```text
-lending-card.js
-hacs.json
-README.md
-LICENSE
-CHANGELOG.md
-tests/
-  lending-card.test.cjs
-.github/
-  workflows/
-    check.yml
-    release.yml
-```
-
-The README badges and installation button target **tschoehuijs/lending-card**, matching the owner shown in the supplied screenshot and the previously selected repository name. If you use another owner or repository name, replace these references throughout this README.
-
-For hidden `.github` folders, use **Add file → Create new file**, enter the complete path (for example `.github/workflows/release.yml`), and paste the corresponding file content.
-
-## Validation workflow
-
-**Validate** runs on pushes, pull requests and manual requests. It checks JavaScript syntax and executes the mocked Node tests. A passing badge means these checks passed, not that the card has been tested in a live Home Assistant browser.
-
-## Publish a release — no local CLI needed
-
-1. Commit all card changes and update `const VERSION` in `lending-card.js`, for example to `1.0.0` for the first release.
-2. Update the version comment and changelog to match.
-3. Open **Actions → Release → Run workflow**.
-4. Select the branch containing the version you want to publish.
-5. Enter the matching tag, for example **v1.0.0**, and run it.
-
-The workflow checks the tag against the card's `VERSION`, validates the HACS filename, checks JavaScript syntax, runs the mocked tests, then publishes a GitHub release with generated notes and **lending-card.js** attached. It creates the tag at the checked-out commit if necessary. No personal access token is required: it uses the workflow's `GITHUB_TOKEN`.
-
-Alternatively, pushing a tag matching `v*.*.*` starts the same workflow. Only stable `vMAJOR.MINOR.PATCH` tags are accepted. Existing releases are not overwritten. If a tag already exists, it must point to the checked-out commit. A rerun after a partially failed publication may require reviewing the existing draft/release first.
-
-The release badge has no version to show until the first release exists. The validation badge needs an initial workflow run.
-
-## Testing status
-
-The card has not been tested in a live Home Assistant instance. The release workflow and mocked tests are provided for execution in your repository; they have not been executed here. Package structure, YAML parsing and embedded shell syntax have been checked locally.
-
-First test in HA: select the list, add a temporary loan, edit it, mark it returned, show returned loans, undo the return, and check mobile/light/dark layouts.
-
-The visual editor uses HA's internal `ha-form` component; future frontend changes may require maintenance. Other to-do providers may lack descriptions or due-date support.
+AI (ChatGPT) was used to help create this card, its code and documentation. The card has been tested in Home Assistant and confirmed working by its author.
 
 ## License
 
