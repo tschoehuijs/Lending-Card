@@ -1,7 +1,7 @@
-/* Lending Card v1.0.0 — MIT License. No build step or external dependencies. */
+/* Lending Card v1.1.0 — MIT License. No build step or external dependencies. */
 (() => {
   "use strict";
-  const VERSION = "1.0.0";
+  const VERSION = "1.1.0";
   const DEFAULTS = { title: "Lending", hide_completed: true, columns: 2, sort: "due" };
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
