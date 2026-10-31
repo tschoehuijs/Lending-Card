@@ -256,7 +256,6 @@
             <div class="heading">${icon("handshake-outline")}<div><h2>${e(this._config.title)}</h2>
               <span class="secondary">${active} on loan</span></div></div>
             <div class="toolbar">
-              <button class="icon-button" id="refresh" title="Refresh" aria-label="Refresh" ${disabled}>${icon("refresh")}</button>
               <button class="add" id="add" aria-label="Add loan" ${disabled}>${icon("plus")}<span>Add loan</span></button>
             </div>
           </header>
@@ -283,7 +282,6 @@
           ${this._loaded && !items.length ? `<div class="empty">${icon("handshake-outline")}<p>${this._items.length ? "No outstanding loans." : "No loans yet. Add your first loan above."}</p></div>` : ""}
         </ha-card>`;
       this.shadowRoot.querySelector("#add").onclick = () => this._open();
-      this.shadowRoot.querySelector("#refresh").onclick = () => this._refresh();
       this.shadowRoot.querySelectorAll(".edit").forEach((button) => {
         button.onclick = () => this._open(items[Number(button.dataset.index)]);
       });
