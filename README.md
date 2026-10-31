@@ -1,58 +1,50 @@
 # Lending Card
 
-A theme-aware Home Assistant dashboard card for tracking items lent to other people.
+[![Validate](https://img.shields.io/github/actions/workflow/status/tschoehuijs/lending-card/check.yml?label=Validate&logo=github&style=flat)](https://github.com/tschoehuijs/lending-card/actions/workflows/check.yml)
+[![Stars](https://img.shields.io/github/stars/tschoehuijs/lending-card?style=flat)](https://github.com/tschoehuijs/lending-card/stargazers)
+[![Release](https://img.shields.io/github/v/release/tschoehuijs/lending-card?label=release&style=flat)](https://github.com/tschoehuijs/lending-card/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat)](LICENSE)
+
+A custom dashboard card for Home Assistant that shows **what you lent out, who borrowed it, and when it is due back**.
+
+[![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tschoehuijs&repository=lending-card&category=plugin)
 
 ## Features
 
-- Individual tiles showing the item, borrower and optional due date.
-- Add and edit loans directly in the card.
-- Mark returned, or undo a return. No deletion or recreation of items.
-- Hide returned items in the visual editor, or show them in gray.
-- Overdue highlighting; active items sort before returned items.
-- Sort by due date, item name or borrower.
-- Native Home Assistant visual configuration form with a to-do entity selector.
-- Configurable title and 1–4 tile columns; responsive narrow-card layout.
-- No build tools, CDN dependencies, custom integration, helpers or automations required.
+- **Individual tiles** with item name, borrower and optional due date.
+- **Add and edit loans** directly in the card.
+- **Mark returned** and undo a return without deleting the item.
+- **Hide returned items**, or display them in gray.
+- **Overdue highlighting** and sorting by due date, item name or borrower.
+- **Visual configuration editor** with a Home Assistant to-do entity selector.
+- Configurable title and 1–4 columns, with responsive narrow-card layouts.
+- Home Assistant theme colors; no external JavaScript dependencies or build step.
 
-## Data mapping
+## How the list is used
 
-Use a **Local to-do** list, such as `todo.lending`:
+Designed for **Local to-do**, for example `todo.lending`:
 
-- Summary / item name = the object lent out.
-- Description = the borrower's name, without extra metadata.
-- Due = optional return date.
-- `needs_action` = on loan; `completed` = returned.
+- Item name / summary → object lent out.
+- Description → borrower name only.
+- Due date → optional expected return date.
+- Incomplete → on loan; completed → returned.
 
-The Home Assistant to-do item API does not expose a creation date. This card therefore does not display a loan date, infer it from entity timestamps, or add hidden metadata to descriptions.
+A loan date is not displayed: the to-do item API does not expose the creation date. The card does not infer it from entity timestamps or add hidden description metadata.
 
-## Publish on GitHub — browser only
-
-1. Create a **public** repository named **lending-card**.
-2. Add a description, for example: "Home Assistant card for tracking lent items and borrowers".
-3. Add topics such as `home-assistant`, `hacs`, `lovelace`, `custom-card`, and `todo`.
-4. Extract the supplied ZIP on your computer.
-5. In GitHub choose **Add file → Upload files**. Upload the extracted contents into the repository root, not a parent folder or the ZIP itself.
-6. The root must contain `lending-card.js`, `hacs.json`, `README.md`, `LICENSE`, and `CHANGELOG.md`.
-7. Optionally upload `.github/workflows/check.yml` and `tests/lending-card.test.cjs`, preserving their directories. GitHub's file picker may hide the `.github` directory; you can instead use **Add file → Create new file** with that full path and paste its contents.
-8. The optional workflow checks JavaScript syntax and runs mocked unit tests automatically on pushes and pull requests.
-9. Optionally publish a GitHub release tagged `v1.0.0`. The JavaScript is in the root, so no build or release attachment is needed.
-
-This prepares a HACS **custom repository**. It does not automatically submit the project to HACS's default catalog.
-
-## Install through HACS
+## Installation
 
 1. Open **HACS → menu → Custom repositories**.
-2. Paste your GitHub repository URL.
-3. Choose **Dashboard** as the category (called `plugin` internally).
-4. Add the repository, find **Lending Card**, and download it.
-5. Reload Home Assistant in your browser.
-6. If the card is not available, check **Settings → Dashboards → Resources** (advanced mode may be needed). Add `/hacsfiles/lending-card/lending-card.js` as a **JavaScript module** if HACS did not register it. Do not add duplicate resources.
-7. Edit a dashboard, choose **Add card**, and search for **Lending Card**.
-8. Select `todo.lending` and set **Hide returned items** as desired.
+2. Add `https://github.com/tschoehuijs/lending-card` with category **Dashboard**.
+3. Download **Lending Card**, then reload the browser.
+4. Edit your dashboard, add **Lending Card**, and select your to-do list.
 
-No Home Assistant restart should be needed for this frontend-only card.
+If needed, register `/hacsfiles/lending-card/lending-card.js` as a **JavaScript module** under dashboard resources. Do not add a duplicate resource.
 
-## Optional YAML
+The button above opens the custom-repository installation flow. It does **not** mean the repository has been accepted into the default HACS catalog.
+
+## Configuration
+
+All these options are available in the visual editor; YAML is optional.
 
 ```yaml
 type: custom:lending-card
@@ -63,40 +55,71 @@ columns: 2
 sort: due
 ```
 
-`sort` accepts `due`, `item`, or `borrower`. Returned loans always appear after active loans. Loans without due dates sort last among active loans when sorting by due date.
+- `hide_completed`: hide returned loans; defaults to `true`.
+- `columns`: 1–4; defaults to `2`.
+- `sort`: `due`, `item` or `borrower`; defaults to `due`.
+- Active loans appear before returned loans. Undated active loans sort last when sorting by due date.
 
-## Use
+## Usage and refresh behavior
 
-- **Add loan** opens an inline form. Item name and borrower are required; due date is optional.
-- The pencil edits a loan. Updates use the item's UID, so duplicate item names are safe.
-- **Mark returned** completes the underlying to-do item.
-- **Returned · Undo** reopens it. Turn off **Hide returned items** to see this button.
-- Refresh manually with the refresh button.
+Use **Add loan** or the pencil button to enter an item, borrower and optional due date. **Mark returned** completes the underlying item. Disable **Hide returned items** to access **Returned · Undo**.
 
-The card refreshes after its own changes, when the selected entity's state object changes, every 30 seconds while the page is visible, and when the page becomes visible again. An external edit that does not update the entity state can therefore take up to 30 seconds to appear. This version does not claim a real-time item subscription.
+Updates use the item's UID, so duplicate item names can be edited independently.
 
-Existing datetime deadlines are displayed with their time. Editing only the name or borrower preserves the original deadline exactly. Explicitly changing the date converts the deadline to a date-only deadline.
+The card refreshes after its own writes, on selected entity state changes, every 30 seconds while visible, and when the page becomes visible. External edits without an entity state update may take up to 30 seconds to appear. The refresh button updates manually.
 
-Clearing an existing due date sends `due_date: null` to Home Assistant. If your HA version rejects this, the card shows the backend error and keeps the edit form open; it never deletes and recreates an item as a workaround. Changing a due date to another date remains available.
+Existing datetime deadlines retain their time when only the borrower or item name changes. Explicitly changing the date converts the deadline to date-only. Clearing a deadline sends `due_date: null`; if your HA version rejects it, the error is displayed and the edit form remains open. The card never deletes and recreates a loan to work around this.
 
-## Validation and limitations
+## Repository setup — browser only
 
-This initial version has been statically reviewed against Home Assistant's documented card and to-do APIs. It has **not been run against a live Home Assistant instance**. The included Node tests mock the browser and backend; they are not a substitute for live UI testing. Their first execution is intended through the included GitHub Actions workflow.
+Create a public repository named **lending-card**, with a description and topics such as `home-assistant`, `hacs`, `lovelace` and `custom-card`.
 
-First test: choose your list, check the tiles, add a temporary loan, edit its borrower/date, mark it returned, disable hiding returned items, and undo the return. Also check your theme and mobile layout.
+Upload the original card package, then apply the files from the release update package, preserving their paths:
 
-The visual editor uses HA's `ha-form` component. Internal frontend components are not a guaranteed stable public API, so future HA releases may require updates. The primary target is Local to-do; other providers may not support descriptions or due dates.
+```text
+lending-card.js
+hacs.json
+README.md
+LICENSE
+CHANGELOG.md
+tests/
+  lending-card.test.cjs
+.github/
+  workflows/
+    check.yml
+    release.yml
+```
 
-No repository has been published or release created by this download. You publish it using the browser steps above.
+The README badges and installation button target **tschoehuijs/lending-card**, matching the owner shown in the supplied screenshot and the previously selected repository name. If you use another owner or repository name, replace these references throughout this README.
 
-## Reference documentation
+For hidden `.github` folders, use **Add file → Create new file**, enter the complete path (for example `.github/workflows/release.yml`), and paste the corresponding file content.
 
-- [To-do integration](https://www.home-assistant.io/integrations/todo/)
-- [To-do entity model](https://contributors.home-assistant.io/core/entities/todo/)
-- [Custom cards](https://developers.home-assistant.io/docs/frontend/custom-ui/custom-card/)
-- [HACS dashboard requirements](https://hacs.xyz/docs/publish/plugin/)
-- [HACS general requirements](https://hacs.xyz/docs/publish/start/)
+## Validation workflow
+
+**Validate** runs on pushes, pull requests and manual requests. It checks JavaScript syntax and executes the mocked Node tests. A passing badge means these checks passed, not that the card has been tested in a live Home Assistant browser.
+
+## Publish a release — no local CLI needed
+
+1. Commit all card changes and update `const VERSION` in `lending-card.js`, for example to `1.0.0` for the first release.
+2. Update the version comment and changelog to match.
+3. Open **Actions → Release → Run workflow**.
+4. Select the branch containing the version you want to publish.
+5. Enter the matching tag, for example **v1.0.0**, and run it.
+
+The workflow checks the tag against the card's `VERSION`, validates the HACS filename, checks JavaScript syntax, runs the mocked tests, then publishes a GitHub release with generated notes and **lending-card.js** attached. It creates the tag at the checked-out commit if necessary. No personal access token is required: it uses the workflow's `GITHUB_TOKEN`.
+
+Alternatively, pushing a tag matching `v*.*.*` starts the same workflow. Only stable `vMAJOR.MINOR.PATCH` tags are accepted. Existing releases are not overwritten. If a tag already exists, it must point to the checked-out commit. A rerun after a partially failed publication may require reviewing the existing draft/release first.
+
+The release badge has no version to show until the first release exists. The validation badge needs an initial workflow run.
+
+## Testing status
+
+The card has not been tested in a live Home Assistant instance. The release workflow and mocked tests are provided for execution in your repository; they have not been executed here. Package structure, YAML parsing and embedded shell syntax have been checked locally.
+
+First test in HA: select the list, add a temporary loan, edit it, mark it returned, show returned loans, undo the return, and check mobile/light/dark layouts.
+
+The visual editor uses HA's internal `ha-form` component; future frontend changes may require maintenance. Other to-do providers may lack descriptions or due-date support.
 
 ## License
 
-MIT. See LICENSE.
+MIT. See [LICENSE](LICENSE).
