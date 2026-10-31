@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag matching the card VERSION (for example v1.0.0)'
+        required: true
+        type: string
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate release tag and card version
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const tag = process.env.TAG;
+          if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
+            throw new Error('Use a stable version tag such as v1.0.0.');
+          }
+          const source = fs.readFileSync('lending-card.js', 'utf8');
+          const version = source.match(/const VERSION\s*=\s*["']([^"']+)["']/)?.[1];
+          if (tag !== `v${version}`) {
+            throw new Error(`Tag ${tag} does not match card VERSION ${version}. Update the card first.`);
+          }
+          const manifest = JSON.parse(fs.readFileSync('hacs.json', 'utf8'));
+          if (manifest.filename !== 'lending-card.js') throw new Error('Unexpected HACS filename.');
+          NODE
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            test "$(git rev-parse "$TAG^{commit}")" = "$(git rev-parse HEAD)" || {
+              echo 'Existing tag points to another commit. Select that tag when running the workflow.'
+              exit 1
+            }
+          fi
+      - name: Check JavaScript syntax
+        run: node --check lending-card.js
+      - name: Run mocked unit tests
+        run: node --test tests/lending-card.test.cjs
+      - name: Publish release and JavaScript asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to overwrite published assets."
+            exit 1
+          fi
+          gh release create "$TAG" lending-card.js \
+            --target "$(git rev-parse HEAD)" \
+            --title "Lending Card $TAG" \
+            --generate-notes
