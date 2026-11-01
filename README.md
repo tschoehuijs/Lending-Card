@@ -31,6 +31,8 @@ Designed for **Local to-do**, for example `todo.lending`:
 
 A loan date is not displayed: the to-do item API does not expose the creation date. The card does not infer it from entity timestamps or add hidden description metadata.
 
+<img width="539" height="626" alt="image" src="https://github.com/user-attachments/assets/35eead23-97d1-465c-9210-eecf9d7852f2" />
+
 ## Installation
 
 1. Open **HACS → menu → Custom repositories**.
