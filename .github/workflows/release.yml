@@ -24,7 +24,7 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
         run: |
           test "$REF_TYPE" = branch || { echo 'Select a branch, not a tag.'; exit 1; }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
