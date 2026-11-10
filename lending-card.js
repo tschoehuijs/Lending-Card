@@ -1,7 +1,7 @@
-/* Lending Card v1.2.0 — MIT License. No build step or external dependencies. */
+/* Lending Card v1.3.0 — MIT License. No build step or external dependencies. */
 (() => {
   "use strict";
-  const VERSION = "1.2.0";
+  const VERSION = "1.3.0";
   const DEFAULTS = { title: "Lending", hide_completed: true, columns: 2, sort: "due" };
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -21,6 +21,7 @@
       this._request = 0;
       this._error = "";
       this._draft = null;
+      this._editMode = false;
     }
     static async getConfigElement() {
       // Load HA's own to-do editor to make its shared form components available.
@@ -49,6 +50,7 @@
         this._loading = false;
         this._loaded = false;
         this._items = [];
+        this._editMode = false;
         this._draft = null;
         this._error = "";
         this._lastState = undefined;
@@ -256,34 +258,50 @@
             <div class="heading">${icon("handshake-outline")}<div><h2>${e(this._config.title)}</h2>
               <span class="secondary">${active} on loan</span></div></div>
             <div class="toolbar">
+              <button class="icon-button edit-mode-toggle ${this._editMode ? "active" : ""}" id="edit-mode" title="${this._editMode ? "Finish editing" : "Edit loans"}" aria-label="${this._editMode ? "Finish editing" : "Edit loans"}" aria-pressed="${this._editMode}" ${this._busy || this._draft ? "disabled" : ""}>${icon(this._editMode ? "check" : "pencil-outline")}</button>
               <button class="add" id="add" aria-label="Add loan" ${disabled}>${icon("plus")}<span>Add loan</span></button>
             </div>
           </header>
           ${this._error ? `<div class="error" role="alert">${e(this._error)}</div>` : ""}
+          ${this._editMode ? '<div class="edit-hint" role="status">Edit mode: select a loan to edit. Use the top checkmark when finished.</div>' : ""}
           ${this._draft ? this._renderForm() : ""}
           ${!this._loaded && this._loading ? '<div class="empty" role="status">Loading loans…</div>' : ""}
           <div class="tiles" style="--columns:${this._config.columns}">
             ${items.map((item, index) => {
               const returned = item.status === "completed";
               const overdue = this._overdue(item);
-              return `<article class="tile ${returned ? "returned" : ""} ${overdue ? "overdue" : ""}">
+              return `<article class="tile ${returned ? "returned" : ""} ${overdue ? "overdue" : ""} ${this._editMode ? "editable" : ""}" ${this._editMode ? `data-edit-index="${index}" role="button" tabindex="${this._busy || this._draft ? "-1" : "0"}" aria-label="Edit ${e(item.summary)}" aria-disabled="${Boolean(this._busy || this._draft)}"` : ""}>
                 <div class="loan-details">
                   <h3>${e(item.summary)}</h3>
                   <div class="borrower">${e(item.description || "No borrower specified")}</div>
                   ${item.due ? `<div class="due ${overdue ? "late" : ""}">${overdue ? "Overdue &middot; " : "Due &middot; "}${e(this._formatDue(item.due))}</div>` : ""}
                 </div>
-                <div class="loan-actions">
-                  <button class="icon-button edit" data-index="${index}" title="Edit loan" aria-label="Edit ${e(item.summary)}" ${disabled}>${icon("pencil-outline")}</button>
+                ${!this._editMode ? `<div class="loan-actions">
                   <button class="icon-button toggle" data-index="${index}" title="${returned ? "Undo return" : "Mark returned"}" aria-label="${returned ? "Undo return of" : "Mark returned:"} ${e(item.summary)}" ${disabled} ${!item.uid ? "disabled" : ""}>${icon(returned ? "undo-variant" : "check")}</button>
-                </div>
+                </div>` : ""}
               </article>`;
             }).join("")}
           </div>
           ${this._loaded && !items.length ? `<div class="empty">${icon("handshake-outline")}<p>${this._items.length ? "No outstanding loans." : "No loans yet. Add your first loan above."}</p></div>` : ""}
         </ha-card>`;
       this.shadowRoot.querySelector("#add").onclick = () => this._open();
-      this.shadowRoot.querySelectorAll(".edit").forEach((button) => {
-        button.onclick = () => this._open(items[Number(button.dataset.index)]);
+      this.shadowRoot.querySelector("#edit-mode").onclick = () => {
+        if (this._busy || this._draft) return;
+        this._editMode = !this._editMode;
+        this._render();
+        this.shadowRoot.querySelector("#edit-mode")?.focus();
+      };
+      this.shadowRoot.querySelectorAll("[data-edit-index]").forEach((tile) => {
+        const open = () => {
+          if (!this._busy && !this._draft) this._open(items[Number(tile.dataset.editIndex)]);
+        };
+        tile.onclick = open;
+        tile.onkeydown = (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            open();
+          }
+        };
       });
       this.shadowRoot.querySelectorAll(".toggle").forEach((button) => {
         button.onclick = () => this._toggle(items[Number(button.dataset.index)]);
@@ -347,7 +365,13 @@
       .loan-actions{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
       .loan-actions .icon-button{width:32px;height:32px;min-height:32px;padding:6px}
       .loan-actions ha-icon{--mdc-icon-size:18px}
-      .loan-actions .edit{color:var(--secondary-text-color)}
+      .toolbar{flex-shrink:0}
+      .edit-mode-toggle.active{background:rgba(var(--rgb-primary-color,3,169,244),.16)}
+      .edit-hint{margin:0 16px 12px;color:var(--primary-color);font-size:12px;line-height:1.4}
+      .tile.editable{border:1px dashed var(--primary-color);box-shadow:inset 0 0 0 1px var(--primary-color);cursor:pointer;background:color-mix(in srgb,var(--primary-color) 10%,var(--secondary-background-color))}
+      .tile.editable:hover{background:color-mix(in srgb,var(--primary-color) 18%,var(--secondary-background-color))}
+      .tile.editable:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
+      .tile.editable[aria-disabled="true"]{cursor:default;opacity:.6}
       .returned .loan-actions button{color:var(--secondary-text-color)}
       @container(max-width:450px){header{flex-wrap:wrap}.tiles{grid-template-columns:repeat(min(var(--columns),2),minmax(0,1fr))}.add span{display:none}.toolbar{margin-left:auto}}
       @container(max-width:330px){.tiles{grid-template-columns:1fr}}
